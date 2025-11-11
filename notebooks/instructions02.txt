@@ -1,0 +1,20 @@
+# Time Domain Features
+1. RMS (Root Mean Square)
+2. Peak-to-Peak
+3. Kurtosis
+4. Skewness
+5. Crest Factor
+6. Shape Factor
+7. Impulse Factor
+
+# Frequency Domain Features
+8. Mean Frequency
+9. Frequency Center
+10. RMS Frequency
+11. Peak Frequency
+12. Spectral Kurtosis
+
+# Statistical Features
+13. Mean
+14. Standard Deviation
+15. Variance

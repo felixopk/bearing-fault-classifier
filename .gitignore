@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data files (too large for GitHub)
+data/raw/*.mat
+data/raw/*.zip
+data/raw/*.npz
+*.csv
+
+# Keep structure but ignore large files
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+
+# Models (can be large)
+models/*.pkl
+models/*.h5
+models/*.joblib
+
+# Keep model metadata
+!models/.gitkeep
+!models/*.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp

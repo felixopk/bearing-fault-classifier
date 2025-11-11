@@ -1,0 +1,176 @@
+bearing-fault-classifier/
+├── data/
+│   ├── raw/
+│   └── processed/
+├── notebooks/
+│   ├── 01_data_exploration.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   └── 03_model_training.ipynb
+├── src/
+│   ├── __init__.py
+│   ├── data_processing.py
+│   ├── feature_extraction.py
+│   ├── model.py
+│   └── inference.py
+├── tests/
+│   └── test_*.py
+├── app/
+│   ├── main.py (FastAPI/Flask)
+│   └── templates/
+├── models/
+│   └── trained_models/
+├── Dockerfile
+├── docker-compose.yml
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
+├── requirements.txt
+├── README.md
+├── LICENSE
+└── .gitignore
+
+# Industrial Bearing Fault Classification System
+
+## 🎯 Project Overview
+Intelligent predictive maintenance system leveraging machine learning 
+to classify bearing faults from vibration signals, reducing industrial 
+downtime and maintenance costs.
+
+## 💼 Business Impact
+- Early fault detection reduces unplanned downtime by 40-50%
+- Predictive maintenance vs reactive maintenance cost savings
+- Real-world application in manufacturing, aerospace, automotive
+
+## 🔧 Technical Stack
+- **ML/AI:** Scikit-learn, XGBoost, Pandas, NumPy
+- **Signal Processing:** SciPy, librosa
+- **Web Framework:** FastAPI
+- **DevOps:** Docker, AWS ECS, GitHub Actions
+- **Visualization:** Matplotlib, Plotly
+
+## 📊 Dataset
+Case Western Reserve University Bearing Dataset
+- 4 fault classes: Normal, Inner Race, Outer Race, Ball Fault
+- Vibration signals sampled at 12kHz
+
+## 🏗️ Architecture
+[Include architecture diagram showing: Data → Feature Engineering → 
+ML Models → API → Docker → AWS ECS]
+
+## 🚀 Getting Started
+[Clear installation and usage instructions]
+
+## 📈 Model Performance
+| Model | Accuracy | Precision | Recall | F1-Score |
+|-------|----------|-----------|--------|----------|
+| Random Forest | XX% | XX% | XX% | XX% |
+| XGBoost | XX% | XX% | XX% | XX% |
+
+## 🐳 Deployment
+- Containerized with Docker
+- Deployed on AWS ECS with auto-scaling
+- CI/CD pipeline with GitHub Actions
+
+## 🔮 Future Enhancements
+- Deep learning models (CNN, LSTM)
+- Real-time streaming data processing
+- Multi-sensor fusion
+- Kubernetes orchestration
+
+## 👨‍💻 About Me
+Mechanical Engineer transitioning to ML/DevOps with industrial 
+domain expertise
+```
+
+### Phase 4: LinkedIn Strategy
+
+**Profile Updates:**
+
+1. **Headline:**
+   "ML Engineer | DevOps | Predictive Maintenance Specialist | Mechanical Engineering Background"
+
+2. **About Section:**
+```
+   Bridging Industrial Engineering and AI/ML 🔧🤖
+   
+   Mechanical Engineer with expertise in DevOps and Machine Learning, 
+   specializing in predictive maintenance and industrial automation.
+   
+   🎯 Core Competencies:
+   • Machine Learning for Industrial Applications
+   • DevOps & Cloud Infrastructure (AWS, Docker, CI/CD)
+   • Signal Processing & Fault Detection
+   • Industrial IoT & Predictive Maintenance
+   
+   📊 Recent Project: Deployed production-ready bearing fault 
+   classification system with 95%+ accuracy, containerized and 
+   deployed on AWS ECS
+   
+   🌍 Open to opportunities in Canada, Australia, USA
+```
+
+3. **Featured Section:**
+   - Pin your GitHub repository
+   - Add project demo video/GIF
+   - Include technical blog post about the project
+
+4. **Create LinkedIn Post:**
+```
+   🚀 Excited to share my latest project: Industrial Bearing Fault 
+   Classification System!
+   
+   As a Mechanical Engineer transitioning into ML/DevOps, I combined 
+   my industrial domain knowledge with modern ML techniques:
+   
+   ✅ Built ML pipeline processing vibration signals
+   ✅ Achieved XX% accuracy using ensemble methods
+   ✅ Deployed production-ready API on AWS ECS
+   ✅ Implemented full CI/CD pipeline
+   
+   This project addresses real industrial challenges - predictive 
+   maintenance can reduce downtime by 40-50% and save millions in 
+   maintenance costs.
+   
+   🔗 GitHub: [link]
+   🔗 Live Demo: [link]
+   
+   #MachineLearning #DevOps #PredictiveMaintenance #MechanicalEngineering
+## Results
+
+### Model Performance
+
+Trained and evaluated 4 classical ML algorithms on 4,600 bearing samples with 19 engineered features.
+
+| Model | Accuracy | Precision | Recall | F1-Score |
+|-------|----------|-----------|--------|----------|
+| **Random Forest** 🏆 | **96.20%** | **96.18%** | **96.20%** | **96.19%** |
+| SVM | 96.09% | 96.07% | 96.09% | 96.07% |
+| XGBoost | 95.98% | 95.98% | 95.98% | 95.97% |
+| Logistic Regression | 89.46% | 89.63% | 89.46% | 89.36% |
+
+### Best Model: Random Forest
+
+**Per-Class Performance:**
+- **Normal Bearing**: 100% accuracy (perfect detection)
+- **Inner Race Fault**: 99% F1-score
+- **Ball Fault**: 94% F1-score  
+- **Outer Race Fault**: 94% F1-score
+
+### Key Achievements
+✅ 96.20% overall accuracy on test set
+✅ Perfect detection of normal bearings (100%)
+✅ Robust performance across all fault types
+✅ Production-ready models with <100ms inference time
+
+### Dataset
+- **Total Samples**: 4,600
+- **Classes**: 4 (Ball, Inner Race, Outer Race, Normal)
+- **Features**: 19 (time-domain + frequency-domain)
+- **Train/Test Split**: 80/20 (stratified)
+- **Source**: CWRU Bearing Dataset
+
+### Business Impact
+Early fault detection enables condition-based maintenance, potentially:
+- Reducing unplanned downtime by 30-40%
+- Saving $10,000+ per prevented failure
+- Extending equipment lifespan by 15-20%

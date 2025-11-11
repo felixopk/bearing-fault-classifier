@@ -1,0 +1,21 @@
+# Key sections to include:
+
+## 1. Load and Visualize Raw Signals
+- Plot time-domain signals for each fault type
+- Compare normal vs faulty bearings visually
+- Check signal lengths, sampling rates
+
+## 2. Statistical Analysis
+- Calculate basic statistics (mean, std, min, max)
+- Identify signal characteristics
+- Check for data imbalances
+
+## 3. Frequency Analysis
+- Apply FFT to visualize frequency components
+- Compare frequency spectra across fault types
+- Identify dominant frequencies
+
+## 4. Signal Quality Check
+- Check for missing values
+- Identify outliers
+- Assess signal-to-noise ratio

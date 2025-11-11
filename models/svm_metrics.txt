@@ -1,0 +1,5 @@
+Model: svm
+Accuracy: 96.09%
+Precision: 96.07%
+Recall: 96.09%
+F1-Score: 96.07%

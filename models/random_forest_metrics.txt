@@ -1,0 +1,5 @@
+Model: random_forest
+Accuracy: 96.20%
+Precision: 96.18%
+Recall: 96.20%
+F1-Score: 96.19%
