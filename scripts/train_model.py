@@ -60,7 +60,6 @@ def load_and_prepare_data():
     for label, count in zip(unique, counts):
         print(f"  - {label:15s}: {count:4d} samples ({count/len(y)*100:.1f}%)")
     print()
-    
     return X, y, feature_cols, df['label'].unique()
 
 
