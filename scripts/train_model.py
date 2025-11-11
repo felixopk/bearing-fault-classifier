@@ -23,6 +23,10 @@ from sklearn.metrics import (
 import xgboost as xgb
 import warnings
 warnings.filterwarnings('ignore')
+import os 
+
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+DATA_PATH = os.path.join(ROOT_DIR, "data", "processed", "features.csv")
 
 
 def load_and_prepare_data():
@@ -34,7 +38,7 @@ def load_and_prepare_data():
     print()
     
     # Load data
-    df = pd.read_csv('data/processed/features.csv')
+    df = pd.read_csv(DATA_PATH)
     print(f"✓ Loaded {len(df)} samples")
     print()
     
