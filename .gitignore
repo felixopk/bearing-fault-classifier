@@ -1,4 +1,6 @@
-# Python
+# ==========================
+# 🧠 Python
+# ==========================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,47 +9,99 @@ __pycache__/
 venv/
 env/
 ENV/
+.venv/
+.env/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# ==========================
+# 📓 Jupyter Notebooks
+# ==========================
+.ipynb_checkpoints/
 *.ipynb_checkpoints/
+.notebooks/
 
-# IDEs
+# ==========================
+# 🧰 IDEs & Editors
+# ==========================
 .vscode/
 .idea/
 *.swp
 *.swo
+*.bak
 
-# Data files (too large for GitHub)
-data/raw/*.mat
-data/raw/*.zip
-data/raw/*.npz
-*.csv
+# ==========================
+# 📦 Data & Datasets
+# ==========================
+# Raw or large data files (never commit)
+data/raw/*
+data/interim/*
+data/processed/*
+data/*.zip
+data/*.csv
+data/*.npz
+data/*.mat
+data/*.npy
 
-# Keep structure but ignore large files
-!data/processed/.gitkeep
-!data/raw/.gitkeep
+# Keep folder structure for reproducibility
+!data/.gitkeep
+!data/README.md
 
-# Models (can be large)
+# ==========================
+# 🤖 Models & Artifacts
+# ==========================
 models/*.pkl
 models/*.h5
 models/*.joblib
+models/*.onnx
+models/*.bin
+models/*.npz
+models/*.npy
 
-# Keep model metadata
+# Keep metrics and documentation
 !models/.gitkeep
 !models/*.txt
+!models/README.md
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
+# ==========================
+# 🧪 Logs, Outputs, and Cache
+# ==========================
 *.log
-
-# Environment variables
-.env
-.env.local
-
-# Temporary files
+*.out
 *.tmp
 *.temp
+*.dat
+*.cache
+*.tensorboard/
+outputs/
+logs/
+
+# ==========================
+# 🐋 Docker & Env Files
+# ==========================
+.env
+.env.local
+docker-compose.override.yml
+
+# ==========================
+# 💻 OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# ==========================
+# 🧬 GitHub Actions / CI Artifacts
+# ==========================
+coverage/
+reports/
+dist/
+build/
+*.egg-info/
+
+# ==========================
+# 🧩 Security
+# ==========================
+secrets/
+keys/
+credentials.json
+token.json
