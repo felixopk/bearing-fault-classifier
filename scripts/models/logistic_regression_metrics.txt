@@ -1,0 +1,5 @@
+Model: logistic_regression
+Accuracy: 89.46%
+Precision: 89.63%
+Recall: 89.46%
+F1-Score: 89.36%

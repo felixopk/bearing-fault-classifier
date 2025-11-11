@@ -1,0 +1,5 @@
+Model: xgboost
+Accuracy: 95.98%
+Precision: 95.98%
+Recall: 95.98%
+F1-Score: 95.97%
