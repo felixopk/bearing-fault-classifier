@@ -1,9 +1,9 @@
-cat > .github/workflows/ci-cd.yml << 'EOF'
+
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main]
   pull_request:
     branches: [ main ]
 
