@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data files (too large)
+data/raw/*.mat
+data/raw/*.zip
+data/raw/*.npz
+data/processed/*.csv
+
+# Git
+.git/
+.gitignore
+
+# Tests
+tests/
+notebooks/
+
+# Documentation
+README.md
+READ.ME
+LICENSE
+
+# Scripts (not needed in container)
+scripts/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

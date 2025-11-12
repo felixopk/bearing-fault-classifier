@@ -1,0 +1,18 @@
+# Production API requirements only
+
+# Core ML - Only what's needed for inference
+numpy==2.3.4
+pandas==2.3.3
+scikit-learn==1.7.2
+xgboost
+joblib==1.5.2
+
+# API (FIXED: added python-multipart)
+fastapi==0.121.0
+uvicorn==0.38.0
+python-multipart==0.0.6
+pydantic==2.12.3
+jinja2==3.1.6
+
+# Minimal utilities
+python-dateutil==2.9.0.post0
