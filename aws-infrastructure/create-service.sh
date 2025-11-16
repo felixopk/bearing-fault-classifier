@@ -1,38 +1,47 @@
 #!/bin/bash
-# Create ECS Service with Load Balancer
+# Create ECS Service
 
 set -e
 
-AWS_REGION="us-east-1"
-CLUSTER_NAME="bearing-classifier-cluster"
-SERVICE_NAME="bearing-classifier-service"
-TASK_FAMILY="bearing-classifier-task"
+# Load configuration
+source aws-infrastructure/config.env
 
-# You need to create a VPC, subnets, and security group first
-# Replace these with your actual IDs
-SUBNET_1="subnet-xxxxxxxxx"
-SUBNET_2="subnet-yyyyyyyyy"
-SECURITY_GROUP="sg-zzzzzzzzz"
-
-echo "🚀 Creating ECS Service..."
-
-# Register task definition
-TASK_DEFINITION_ARN=$(aws ecs register-task-definition \
-    --cli-input-json file://task-definition.json \
-    --region $AWS_REGION \
-    --query 'taskDefinition.taskDefinitionArn' \
-    --output text)
-
-echo "✅ Task definition registered: $TASK_DEFINITION_ARN"
+echo "🚀 Creating ECS service..."
 
 # Create service
-aws ecs create-service \
+SERVICE_ARN=$(aws ecs create-service \
     --cluster $CLUSTER_NAME \
     --service-name $SERVICE_NAME \
     --task-definition $TASK_FAMILY \
     --desired-count 1 \
     --launch-type FARGATE \
-    --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_1,$SUBNET_2],securityGroups=[$SECURITY_GROUP],assignPublicIp=ENABLED}" \
+    --platform-version LATEST \
+    --network-configuration "awsvpcConfiguration={subnets=[$SUBNET1,$SUBNET2],securityGroups=[$ECS_SG],assignPublicIp=ENABLED}" \
+    --load-balancers "targetGroupArn=$TG_ARN,containerName=${APP_NAME}-container,containerPort=8000" \
+    --health-check-grace-period-seconds 60 \
+    --region $AWS_REGION \
+    --query 'service.serviceArn' \
+    --output text 2>/dev/null || \
+    aws ecs describe-services \
+        --cluster $CLUSTER_NAME \
+        --services $SERVICE_NAME \
+        --query "services[0].serviceArn" \
+        --output text \
+        --region $AWS_REGION)
+
+echo "✅ Service created: $SERVICE_ARN"
+echo ""
+echo "⏳ Waiting for service to become stable (this may take 2-3 minutes)..."
+
+aws ecs wait services-stable \
+    --cluster $CLUSTER_NAME \
+    --services $SERVICE_NAME \
     --region $AWS_REGION
 
-echo "✅ Service created successfully!"
+echo "✅ Service is stable and running!"
+echo ""
+echo "🔗 Your API is now accessible at: http://$ALB_DNS"
+echo ""
+echo "Test with:"
+echo "  curl http://$ALB_DNS/health"
+echo ""

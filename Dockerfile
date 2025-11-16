@@ -1,24 +1,25 @@
+# Production Dockerfile for AWS ECS deploymentS
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install curl for healthcheck
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy MINIMAL requirements for Docker
+# Copy and install Python requirements
 COPY requirements.docker.txt requirements.txt
-
-# Install packages
-RUN pip install --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     rm -rf /root/.cache/pip
 
-# Copy application
+# Copy application code
 COPY app/ ./app/
 COPY src/ ./src/
-COPY models/*.pkl ./models/
+
+# Create models directory (will be populated at runtime from S3)
+RUN mkdir -p ./models
 
 # Create non-root user
 RUN useradd -m -u 1000 apiuser && \
@@ -28,7 +29,9 @@ USER apiuser
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Health check with longer start period for model download
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start command
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

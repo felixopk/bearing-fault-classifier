@@ -78,4 +78,4 @@ echo "   docker push $ECR_URI:latest"
 echo ""
 echo "2. Register task definition (see task-definition.json)"
 echo "3. Create ECS service (see create-service.sh)"
-EOF
+
