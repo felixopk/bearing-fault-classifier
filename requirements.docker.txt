@@ -1,18 +1,19 @@
-# Production API requirements only
+# Minimal production requirements - NO heavy packages!
 
-# Core ML - Only what's needed for inference
-numpy==2.3.4
-pandas==2.3.3
-scikit-learn==1.7.2
-xgboost
-joblib==1.5.2
-
-# API (FIXED: added python-multipart)
+# API Framework (lightweight)
 fastapi==0.121.0
 uvicorn==0.38.0
 python-multipart==0.0.6
 pydantic==2.12.3
 jinja2==3.1.6
 
-# Minimal utilities
-python-dateutil==2.9.0.post0
+# ML Core (minimal versions)
+numpy==1.26.4
+scikit-learn==1.4.0
+xgboost==2.0.3
+joblib==1.4.0
+
+# For downloading models from S3
+requests==2.31.0
+
+# That's it! Only 10 packages total
