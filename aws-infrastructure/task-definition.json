@@ -4,11 +4,12 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::730335186130:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::730335186130:role/bearing-classifier-task-role",
   "containerDefinitions": [
     {
       "name": "bearing-api",
-      "image": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/bearing-fault-classifier:latest",
+      "image": "730335186130.dkr.ecr.us-east-1.amazonaws.com/bearing-fault-classifier:latest",
       "cpu": 512,
       "memory": 1024,
       "essential": true,

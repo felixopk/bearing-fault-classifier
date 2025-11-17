@@ -8,11 +8,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: bearing-classifier
+  ECR_REPOSITORY: bearing-fault-classifier
   ECS_CLUSTER: bearing-classifier-cluster
   ECS_SERVICE: bearing-classifier-service
   ECS_TASK_DEFINITION: bearing-classifier-task
-  CONTAINER_NAME: bearing-classifier-container
+  CONTAINER_NAME: bearing-api
 
 jobs:
   # Job 1: Lint and Test
