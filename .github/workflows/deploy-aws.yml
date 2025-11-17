@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: bearing-fault-classifier
+  ECR_REPOSITORY: bearing-classifier
   ECS_CLUSTER: bearing-classifier-cluster
   ECS_SERVICE: bearing-classifier-service
   ECS_TASK_DEFINITION: bearing-classifier-task

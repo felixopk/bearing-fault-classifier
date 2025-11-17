@@ -9,7 +9,7 @@
   "containerDefinitions": [
     {
       "name": "bearing-api",
-      "image": "730335186130.dkr.ecr.us-east-1.amazonaws.com/bearing-fault-classifier:latest",
+      "image": "730335186130.dkr.ecr.us-east-1.amazonaws.com/bearing-classifier:latest",
       "cpu": 512,
       "memory": 1024,
       "essential": true,
