@@ -1,19 +1,19 @@
-# Minimal production requirements - NO heavy packages!
+# Production requirements
 
-# API Framework (lightweight)
+# API Framework
 fastapi==0.121.0
 uvicorn==0.38.0
 python-multipart==0.0.6
 pydantic==2.12.3
 jinja2==3.1.6
 
-# ML Core (minimal versions)
+# ML Core
 numpy==1.26.4
+pandas==2.2.0          # ← ADD THIS BACK
 scikit-learn==1.4.0
 xgboost==2.0.3
 joblib==1.4.0
 
-# For downloading models from S3
+# Utilities
 requests==2.31.0
-
-# That's it! Only 10 packages total
+python-dateutil==2.9.0
