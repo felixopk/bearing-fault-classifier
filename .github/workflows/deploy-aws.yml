@@ -12,7 +12,7 @@ env:
   ECS_CLUSTER: bearing-classifier-cluster
   ECS_SERVICE: bearing-classifier-service
   ECS_TASK_DEFINITION: bearing-classifier-task
-  CONTAINER_NAME: bearing-api
+  CONTAINER_NAME: bearing-classifier-container
 
 jobs:
   # Job 1: Lint and Test

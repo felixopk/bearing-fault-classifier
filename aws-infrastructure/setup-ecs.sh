@@ -9,7 +9,7 @@ CLUSTER_NAME="bearing-classifier-cluster"
 SERVICE_NAME="bearing-classifier-service"
 TASK_FAMILY="bearing-classifier-task"
 ECR_REPO="bearing-classifier"
-CONTAINER_NAME="bearing-api"
+CONTAINER_NAME="bearing-classifier-container"
 CONTAINER_PORT=8000
 
 echo "🚀 Setting up AWS ECS Infrastructure"
