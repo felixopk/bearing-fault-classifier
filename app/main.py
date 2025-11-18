@@ -77,18 +77,12 @@ async def load_model():
     try:
         logger.info("🚀 Starting model loading process...")
         
-        # Download models from S3 if not present
-        force_download = os.getenv("FORCE_MODEL_DOWNLOAD", "false").lower() == "true"
+        # Ensure models exist (download from S3 if missing)
+        ensure_models_exist()
         
-        logger.info("📥 Ensuring models are available...")
-        logger.info(f"   MODEL_URL: {os.getenv('MODEL_URL', 'NOT SET')[:80]}...")
-        logger.info(f"   SCALER_URL: {os.getenv('SCALER_URL', 'NOT SET')[:80]}...")
+        models_dir = Path("/app/models")
         
-        ensure_models_exist(force_download=force_download)
-        
-        models_dir = Path("models")
-        
-        # Load best model (Random Forest)
+        # Load Random Forest model
         model_path = models_dir / "random_forest_model.pkl"
         scaler_path = models_dir / "random_forest_scaler.pkl"
         
@@ -101,7 +95,7 @@ async def load_model():
         logger.info(f"📂 Loading scaler from {scaler_path}")
         SCALER = joblib.load(scaler_path)
         
-        # Load feature names
+        # Feature names
         FEATURE_NAMES = [f"feature_{i}" for i in range(19)]
         
         model_version = get_model_version()
@@ -113,8 +107,6 @@ async def load_model():
         
     except Exception as e:
         logger.error(f"❌ Failed to load model: {e}")
-        logger.error(f"   MODEL_URL env: {os.getenv('MODEL_URL', 'NOT SET')}")
-        logger.error(f"   SCALER_URL env: {os.getenv('SCALER_URL', 'NOT SET')}")
         raise
 
 
@@ -259,7 +251,6 @@ async def model_info():
         "test_samples": 920,
         "feature_names": FEATURE_NAMES,
         "model_source": "S3",
-        "model_url": os.getenv("MODEL_URL", "not set")[:80] + "...",
         "last_updated": os.getenv("MODEL_LAST_UPDATED", "unknown")
     }
 
