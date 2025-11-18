@@ -177,7 +177,7 @@ jobs:
           echo "  ALB DNS: ${{ steps.get-url.outputs.url }}"
           echo "  API Health: ${{ steps.get-url.outputs.url }}/health"
           echo "  API Docs: ${{ steps.get-url.outputs.url }}/docs"
-          echo "  Custom Domain: http://api.opkclodz.com (after DNS setup)"
+          echo "  Custom Domain: http://api.opkcloudz.com (after DNS setup)"
           echo ""
           echo "📊 Service Details:"
           echo "  Cluster: ${{ env.ECS_CLUSTER }}"
