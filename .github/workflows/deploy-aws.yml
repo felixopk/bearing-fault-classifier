@@ -14,6 +14,7 @@ env:
   ECS_TASK_DEFINITION: bearing-classifier-task
   CONTAINER_NAME: bearing-classifier-container
 
+
 jobs:
   # Job 1: Lint and Test
   test:

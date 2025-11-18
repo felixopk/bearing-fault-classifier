@@ -5,7 +5,7 @@
   "cpu": "512",
   "memory": "1024",
   "executionRoleArn": "arn:aws:iam::730335186130:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::730335186130:role/bearing-classifier-task-role",
+  "taskRoleArn": "arn:aws:iam::730335186130:role/bearing-classifier-ecs-task-role",
   "containerDefinitions": [
     {
       "name": "bearing-classifier-container",
