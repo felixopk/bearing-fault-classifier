@@ -24,6 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug — show repo structure
+        run: |
+          echo "📂 Repo structure:"
+           ls -R $GITHUB_WORKSPACE
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+            pip install -r $GITHUB_WORKSPACE/requirements.docker.txt
           pip install pytest flake8
 
       - name: Lint with flake8
