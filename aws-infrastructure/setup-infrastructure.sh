@@ -1,6 +1,6 @@
 #!/bin/bash
 # Complete AWS Infrastructure Setup for Bearing Fault Classifier
-# Updated: adds 2 private subnets + public/private route tables + NAT Gateway + associations
+# Updated: always create or reuse an app-specific VPC (never use default VPC)
 set -euo pipefail
 
 # -------------------------
@@ -158,49 +158,68 @@ aws iam put-role-policy \
 echo ""
 
 # -------------------------
-# 6. Create VPC + 4 subnets (2 public + 2 private) or reuse default VPC + create private subnets
+# 6. Create (or reuse) an app-specific VPC (never use default VPC)
 # -------------------------
-echo "🌐 Setting up networking..."
+echo "🌐 Setting up networking (creating or reusing app-specific VPC)..."
 
-# Check if default VPC exists
-DEFAULT_VPC=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query "Vpcs[0].VpcId" --output text --region "$AWS_REGION" || true)
+# Attempt to find an existing VPC specifically created for this app (tag Name=${APP_NAME}-vpc)
+VPC_ID=$(aws ec2 describe-vpcs \
+    --filters "Name=tag:Name,Values=${APP_NAME}-vpc" \
+    --query "Vpcs[0].VpcId" --output text --region "$AWS_REGION" 2>/dev/null || true)
 
-if [ -z "$DEFAULT_VPC" ] || [ "$DEFAULT_VPC" = "None" ]; then
-    echo "  Creating new VPC..."
+if [ -z "$VPC_ID" ] || [ "$VPC_ID" = "None" ]; then
+    echo "  No existing app VPC found. Creating a new VPC..."
     VPC_ID=$(aws ec2 create-vpc --cidr-block "$VPC_CIDR" --query Vpc.VpcId --output text --region "$AWS_REGION")
     aws ec2 create-tags --resources "$VPC_ID" --tags Key=Name,Value="${APP_NAME}-vpc" --region "$AWS_REGION"
 
-    # Create 2 public and 2 private subnets
+    # Enable DNS support and hostnames on the VPC (useful for ALB, etc.)
+    aws ec2 modify-vpc-attribute --vpc-id "$VPC_ID" --enable-dns-support "{\"Value\":true}" --region "$AWS_REGION"
+    aws ec2 modify-vpc-attribute --vpc-id "$VPC_ID" --enable-dns-hostnames "{\"Value\":true}" --region "$AWS_REGION"
+
+    # Create 2 public and 2 private subnets (across two AZs)
     SUBNET_PUB_A=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PUB_SUBNET_A_CIDR" --availability-zone "${AWS_REGION}a" --query Subnet.SubnetId --output text --region "$AWS_REGION")
     SUBNET_PUB_B=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PUB_SUBNET_B_CIDR" --availability-zone "${AWS_REGION}b" --query Subnet.SubnetId --output text --region "$AWS_REGION")
     SUBNET_PRIV_A=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_A_CIDR" --availability-zone "${AWS_REGION}a" --query Subnet.SubnetId --output text --region "$AWS_REGION")
     SUBNET_PRIV_B=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_B_CIDR" --availability-zone "${AWS_REGION}b" --query Subnet.SubnetId --output text --region "$AWS_REGION")
+
+    # Tag subnets
+    aws ec2 create-tags --resources "$SUBNET_PUB_A" --tags Key=Name,Value="${APP_NAME}-public-a" --region "$AWS_REGION"
+    aws ec2 create-tags --resources "$SUBNET_PUB_B" --tags Key=Name,Value="${APP_NAME}-public-b" --region "$AWS_REGION"
+    aws ec2 create-tags --resources "$SUBNET_PRIV_A" --tags Key=Name,Value="${APP_NAME}-private-a" --region "$AWS_REGION"
+    aws ec2 create-tags --resources "$SUBNET_PRIV_B" --tags Key=Name,Value="${APP_NAME}-private-b" --region "$AWS_REGION"
 
     # create internet gateway and attach
     IGW=$(aws ec2 create-internet-gateway --query InternetGateway.InternetGatewayId --output text --region "$AWS_REGION")
     aws ec2 attach-internet-gateway --vpc-id "$VPC_ID" --internet-gateway-id "$IGW" --region "$AWS_REGION"
 
 else
-    echo "  Using default VPC: $DEFAULT_VPC"
-    VPC_ID=$DEFAULT_VPC
+    echo "  Found existing app VPC: $VPC_ID (reusing it)"
+    # If the VPC exists, try to get subnets by tag; if they don't exist, create them.
+    IGW=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${VPC_ID}" --query "InternetGateways[0].InternetGatewayId" --output text --region "$AWS_REGION" || true)
+    SUBNET_PUB_A=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=${APP_NAME}-public-a" --query "Subnets[0].SubnetId" --output text --region "$AWS_REGION" || true)
+    SUBNET_PUB_B=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=${APP_NAME}-public-b" --query "Subnets[0].SubnetId" --output text --region "$AWS_REGION" || true)
+    SUBNET_PRIV_A=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=${APP_NAME}-private-a" --query "Subnets[0].SubnetId" --output text --region "$AWS_REGION" || true)
+    SUBNET_PRIV_B=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=${APP_NAME}-private-b" --query "Subnets[0].SubnetId" --output text --region "$AWS_REGION" || true)
 
-    # Grab two default subnets (will be used as public subnets for ALB/NAT)
-    SUBNETS_LIST=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query "Subnets[?MapPublicIpOnLaunch==\`true\`].SubnetId" --output text --region "$AWS_REGION" || true)
-    # Fallback to any subnets if MapPublicIpOnLaunch filter returns empty
-    if [ -z "$SUBNETS_LIST" ]; then
-      SUBNETS_LIST=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC_ID" --query "Subnets[].SubnetId" --output text --region "$AWS_REGION")
+    # Create any missing subnets using Option A CIDRs (only if absent)
+    if [ -z "$SUBNET_PUB_A" ] || [ "$SUBNET_PUB_A" = "None" ]; then
+      SUBNET_PUB_A=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PUB_SUBNET_A_CIDR" --availability-zone "${AWS_REGION}a" --query Subnet.SubnetId --output text --region "$AWS_REGION")
+      aws ec2 create-tags --resources "$SUBNET_PUB_A" --tags Key=Name,Value="${APP_NAME}-public-a" --region "$AWS_REGION"
+    fi
+    if [ -z "$SUBNET_PUB_B" ] || [ "$SUBNET_PUB_B" = "None" ]; then
+      SUBNET_PUB_B=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PUB_SUBNET_B_CIDR" --availability-zone "${AWS_REGION}b" --query Subnet.SubnetId --output text --region "$AWS_REGION")
+      aws ec2 create-tags --resources "$SUBNET_PUB_B" --tags Key=Name,Value="${APP_NAME}-public-b" --region "$AWS_REGION"
+    fi
+    if [ -z "$SUBNET_PRIV_A" ] || [ "$SUBNET_PRIV_A" = "None" ]; then
+      SUBNET_PRIV_A=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_A_CIDR" --availability-zone "${AWS_REGION}a" --query Subnet.SubnetId --output text --region "$AWS_REGION")
+      aws ec2 create-tags --resources "$SUBNET_PRIV_A" --tags Key=Name,Value="${APP_NAME}-private-a" --region "$AWS_REGION"
+    fi
+    if [ -z "$SUBNET_PRIV_B" ] || [ "$SUBNET_PRIV_B" = "None" ]; then
+      SUBNET_PRIV_B=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_B_CIDR" --availability-zone "${AWS_REGION}b" --query Subnet.SubnetId --output text --region "$AWS_REGION")
+      aws ec2 create-tags --resources "$SUBNET_PRIV_B" --tags Key=Name,Value="${APP_NAME}-private-b" --region "$AWS_REGION"
     fi
 
-    # pick first two as public subnets
-    SUBNET_PUB_A=$(echo "$SUBNETS_LIST" | awk '{print $1}')
-    SUBNET_PUB_B=$(echo "$SUBNETS_LIST" | awk '{print $2}')
-
-    # create two private subnets in the same VPC (Option A CIDRs)
-    SUBNET_PRIV_A=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_A_CIDR" --availability-zone "${AWS_REGION}a" --query Subnet.SubnetId --output text --region "$AWS_REGION")
-    SUBNET_PRIV_B=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$PRIV_SUBNET_B_CIDR" --availability-zone "${AWS_REGION}b" --query Subnet.SubnetId --output text --region "$AWS_REGION")
-
-    # find or create IGW (attach if not attached)
-    IGW=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=${VPC_ID}" --query "InternetGateways[0].InternetGatewayId" --output text --region "$AWS_REGION" || true)
+    # Ensure IGW exists and is attached
     if [ -z "$IGW" ] || [ "$IGW" = "None" ]; then
         IGW=$(aws ec2 create-internet-gateway --query InternetGateway.InternetGatewayId --output text --region "$AWS_REGION")
         aws ec2 attach-internet-gateway --vpc-id "$VPC_ID" --internet-gateway-id "$IGW" --region "$AWS_REGION"
@@ -222,10 +241,7 @@ echo "🛣️ Setting up Route Tables + NAT Gateway..."
 echo ""
 
 # Create or find Public Route Table
-if PUBLIC_RT=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC_ID" "Name=association.subnet-id,Values=$SUBNET_PUB_A" --query "RouteTables[0].RouteTableId" --output text --region "$AWS_REGION" 2>/dev/null); then
-  :
-fi
-
+PUBLIC_RT=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC_ID" "Name=tag:Name,Values=${APP_NAME}-public-rt" --query "RouteTables[0].RouteTableId" --output text --region "$AWS_REGION" 2>/dev/null || true)
 if [ -z "$PUBLIC_RT" ] || [ "$PUBLIC_RT" = "None" ]; then
   PUBLIC_RT=$(aws ec2 create-route-table --vpc-id "$VPC_ID" --query 'RouteTable.RouteTableId' --output text --region "$AWS_REGION")
   aws ec2 create-tags --resources "$PUBLIC_RT" --tags Key=Name,Value="${APP_NAME}-public-rt" --region "$AWS_REGION"
@@ -242,6 +258,10 @@ echo "  Added route: 0.0.0.0/0 → IGW (if missing)"
 aws ec2 associate-route-table --subnet-id "$SUBNET_PUB_A" --route-table-id "$PUBLIC_RT" --region "$AWS_REGION" || true
 aws ec2 associate-route-table --subnet-id "$SUBNET_PUB_B" --route-table-id "$PUBLIC_RT" --region "$AWS_REGION" || true
 echo "  Associated public subnets with public RT"
+
+# Ensure public subnets auto-assign public IP on launch
+aws ec2 modify-subnet-attribute --subnet-id "$SUBNET_PUB_A" --map-public-ip-on-launch "{\"Value\":true}" --region "$AWS_REGION" || true
+aws ec2 modify-subnet-attribute --subnet-id "$SUBNET_PUB_B" --map-public-ip-on-launch "{\"Value\":true}" --region "$AWS_REGION" || true
 
 # Allocate Elastic IP for NAT (idempotent check)
 echo "🌐 Allocating Elastic IP for NAT Gateway..."
