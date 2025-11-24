@@ -21,13 +21,14 @@ echo "Container:  $CONTAINER_NAME"
 SERVICE_EXISTS=$(aws ecs describe-services \
   --cluster "$CLUSTER_NAME" \
   --services "$SERVICE_NAME" \
-  --query "services[0].status" \
-  --output text 2>/dev/null || echo "MISSING")
+  --query "failures[0].reason" \
+  --output text 2>/dev/null)
 
-if [ "$SERVICE_EXISTS" != "MISSING" ]; then
-    echo "⚠️ Service already exists. Skipping creation."
-    exit 0
+if [ "$SERVICE_EXISTS" != "MISSING" ] && [ "$SERVICE_EXISTS" != "null" ] && [ "$SERVICE_EXISTS" != "ServiceNotFoundException" ]; then
+  echo "⚠️ Service already exists. Skipping creation."
+  exit 0
 fi
+
 
 echo "🛠️ Creating new ECS service..."
 
