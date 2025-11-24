@@ -1,37 +1,134 @@
 #!/bin/bash
-# Configure Route 53 DNS for custom domain
+# Configure HTTPS + ACM + DNS for API domain
 
-set -e
+set -euo pipefail
 
-# Load configuration
 source aws-infrastructure/config.env
 
-echo "🌐 Configuring DNS for $DOMAIN_NAME..."
+echo "🌍 Setting up HTTPS + Route53 DNS for: $DOMAIN_NAME"
+echo ""
 
-# Get hosted zone ID for opkclodz.com
+# -----------------------
+# 1. REQUEST ACM CERTIFICATE
+# -----------------------
+echo "📜 Requesting ACM Certificate..."
+
+CERT_ARN=$(aws acm request-certificate \
+    --domain-name "$DOMAIN_NAME" \
+    --validation-method DNS \
+    --query CertificateArn \
+    --output text \
+    --region "$AWS_REGION")
+
+echo "  Certificate ARN: $CERT_ARN"
+echo ""
+
+# -----------------------
+# 2. GET DNS VALIDATION RECORDS
+# -----------------------
+echo "🔍 Getting DNS validation details..."
+
+DNS_RECORD=$(aws acm describe-certificate \
+    --certificate-arn "$CERT_ARN" \
+    --query "Certificate.DomainValidationOptions[0].ResourceRecord" \
+    --output json \
+    --region "$AWS_REGION")
+
+VALIDATION_NAME=$(echo "$DNS_RECORD" | jq -r '.Name')
+VALIDATION_VALUE=$(echo "$DNS_RECORD" | jq -r '.Value')
+
+echo "  Validation Name:  $VALIDATION_NAME"
+echo "  Validation Value: $VALIDATION_VALUE"
+echo ""
+
+# -----------------------
+# 3. FIND HOSTED ZONE ID
+# -----------------------
+BASE_DOMAIN=$(echo "$DOMAIN_NAME" | sed 's/^[^.]*\.//')
+
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name \
-    --dns-name opkcloudz.com \
+    --dns-name "$BASE_DOMAIN" \
     --query "HostedZones[0].Id" \
     --output text | cut -d'/' -f3)
 
-if [ -z "$HOSTED_ZONE_ID" ] || [ "$HOSTED_ZONE_ID" = "None" ]; then
-    echo "❌ Hosted zone for opkcloudz.com not found!"
-    echo "Please create a hosted zone first:"
-    echo "  aws route53 create-hosted-zone --name opkcloudz.com --caller-reference $(date +%s)"
-    exit 1
+if [[ "$HOSTED_ZONE_ID" == "" || "$HOSTED_ZONE_ID" == "None" ]]; then
+  echo "❌ Hosted zone for $BASE_DOMAIN not found!"
+  exit 1
 fi
 
-echo "Hosted Zone ID: $HOSTED_ZONE_ID"
+echo "  Hosted Zone ID: $HOSTED_ZONE_ID"
+echo ""
 
-# Get ALB Hosted Zone ID
+# -----------------------
+# 4. CREATE DNS VALIDATION RECORD
+# -----------------------
+echo "📝 Creating DNS validation record for ACM..."
+
+cat > /tmp/acm-validation.json << EOF
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "$VALIDATION_NAME",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          { "Value": "$VALIDATION_VALUE" }
+        ]
+      }
+    }
+  ]
+}
+EOF
+
+aws route53 change-resource-record-sets \
+    --hosted-zone-id "$HOSTED_ZONE_ID" \
+    --change-batch file:///tmp/acm-validation.json
+
+echo "  DNS validation record created!"
+echo ""
+
+# -----------------------
+# 5. WAIT FOR CERT VALIDATION
+# -----------------------
+echo "⏳ Waiting for ACM to validate certificate (2–5 minutes)..."
+
+aws acm wait certificate-validated \
+    --certificate-arn "$CERT_ARN" \
+    --region "$AWS_REGION"
+
+echo "  🎉 ACM certificate validated!"
+echo ""
+
+# -----------------------
+# 6. CREATE HTTPS LISTENER (443)
+# -----------------------
+echo "⚖️ Creating HTTPS listener on ALB..."
+
+aws elbv2 create-listener \
+  --load-balancer-arn "$ALB_ARN" \
+  --protocol HTTPS \
+  --port 443 \
+  --certificates CertificateArn="$CERT_ARN" \
+  --ssl-policy ELBSecurityPolicy-2016-08 \
+  --default-actions Type=forward,TargetGroupArn="$TG_ARN" \
+  --region "$AWS_REGION" 2>/dev/null || echo "✔️ HTTPS listener already exists"
+
+echo ""
+
+# -----------------------
+# 7. CREATE A RECORD FOR API → ALB
+# -----------------------
+echo "🌐 Creating A record for domain → ALB..."
+
+# get ALB hosted zone
 ALB_HOSTED_ZONE=$(aws elbv2 describe-load-balancers \
-    --load-balancer-arns $ALB_ARN \
+    --load-balancer-arns "$ALB_ARN" \
     --query "LoadBalancers[0].CanonicalHostedZoneId" \
-    --output text \
-    --region $AWS_REGION)
+    --output text)
 
-# Create/Update DNS record
-cat > /tmp/dns-change.json << DNS
+cat > /tmp/api-alias.json << EOF
 {
   "Changes": [
     {
@@ -42,33 +139,18 @@ cat > /tmp/dns-change.json << DNS
         "AliasTarget": {
           "HostedZoneId": "$ALB_HOSTED_ZONE",
           "DNSName": "$ALB_DNS",
-          "EvaluateTargetHealth": true
+          "EvaluateTargetHealth": false
         }
       }
     }
   ]
 }
-DNS
+EOF
 
-# Apply DNS change
-CHANGE_ID=$(aws route53 change-resource-record-sets \
-    --hosted-zone-id $HOSTED_ZONE_ID \
-    --change-batch file:///tmp/dns-change.json \
-    --query 'ChangeInfo.Id' \
-    --output text)
+aws route53 change-resource-record-sets \
+  --hosted-zone-id "$HOSTED_ZONE_ID" \
+  --change-batch file:///tmp/api-alias.json
 
-echo "✅ DNS record created/updated"
-echo "Change ID: $CHANGE_ID"
+echo "✔️ A record created: $DOMAIN_NAME → $ALB_DNS"
 echo ""
-echo "⏳ Waiting for DNS propagation (this may take 1-2 minutes)..."
-
-aws route53 wait resource-record-sets-changed --id $CHANGE_ID
-
-echo "✅ DNS propagation complete!"
-echo ""
-echo "🎉 Your API is now accessible at:"
-echo "  http://$DOMAIN_NAME"
-echo ""
-echo "Test with:"
-echo "  curl http://$DOMAIN_NAME/health"
-echo ""
+echo "🎉 Your API will be available at: https://$DOMAIN_NAME"

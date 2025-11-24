@@ -1,47 +1,29 @@
 #!/bin/bash
-# Create ECS Service
+set -euo pipefail
 
-set -e
-
-# Load configuration
 source aws-infrastructure/config.env
 
-echo "🚀 Creating ECS service..."
+echo "🚀 Creating ECS Service..."
 
-# Create service
-SERVICE_ARN=$(aws ecs create-service \
-    --cluster $CLUSTER_NAME \
-    --service-name $SERVICE_NAME \
-    --task-definition $TASK_FAMILY \
-    --desired-count 1 \
-    --launch-type FARGATE \
-    --platform-version LATEST \
-    --network-configuration "awsvpcConfiguration={subnets=[$SUBNET1,$SUBNET2],securityGroups=[$ECS_SG],assignPublicIp=ENABLED}" \
-    --load-balancers "targetGroupArn=$TG_ARN,containerName=${APP_NAME}-container,containerPort=8000" \
-    --health-check-grace-period-seconds 60 \
-    --region $AWS_REGION \
-    --query 'service.serviceArn' \
-    --output text 2>/dev/null || \
-    aws ecs describe-services \
-        --cluster $CLUSTER_NAME \
-        --services $SERVICE_NAME \
-        --query "services[0].serviceArn" \
-        --output text \
-        --region $AWS_REGION)
+aws ecs create-service \
+  --cluster "$CLUSTER_NAME" \
+  --service-name "$SERVICE_NAME" \
+  --task-definition "$TASK_FAMILY" \
+  --launch-type FARGATE \
+  --desired-count 1 \
+  --load-balancers "[
+    {
+      \"targetGroupArn\": \"${TG_ARN}\",
+      \"containerName\": \"${APP_NAME}\",
+      \"containerPort\": 8000
+    }
+  ]" \
+  --network-configuration "awsvpcConfiguration={
+      subnets=[\"${SUBNET_PRIV_A}\",\"${SUBNET_PRIV_B}\"],
+      securityGroups=[\"${ECS_SG}\"],
+      assignPublicIp=\"DISABLED\"
+  }" \
+  --region "$AWS_REGION"
 
-echo "✅ Service created: $SERVICE_ARN"
-echo ""
-echo "⏳ Waiting for service to become stable (this may take 2-3 minutes)..."
-
-aws ecs wait services-stable \
-    --cluster $CLUSTER_NAME \
-    --services $SERVICE_NAME \
-    --region $AWS_REGION
-
-echo "✅ Service is stable and running!"
-echo ""
-echo "🔗 Your API is now accessible at: http://$ALB_DNS"
-echo ""
-echo "Test with:"
-echo "  curl http://$ALB_DNS/health"
-echo ""
+echo "✅ ECS Service created!"
+echo "🌐 Your API will be available at https://$DOMAIN_NAME"
